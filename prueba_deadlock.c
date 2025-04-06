@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/03 19:47:37 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/06 12:29:05 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/06 21:36:41 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,11 @@
 
 
 #define NUM_FILOSOFOS 5
-#define NUM_REPETICIONES 1
-#define TIME_TO_DIE 1000
+#define TIME_TO_DIE 100
 
 volatile int	someone_died = 0;
 pthread_mutex_t	tenedores[NUM_FILOSOFOS];
+long	start_time;
 
 typedef	struct s_filosofo
 {
@@ -30,6 +30,7 @@ typedef	struct s_filosofo
 	pthread_mutex_t	*tenedor_der;
 	long			last_meal_time;
 } t_filosofo;
+
 
 void	esperar(const char *accion, int id, int tiempo)
 {
@@ -45,12 +46,11 @@ long	get_timestamp(void)
 }
 
 
-void	*cosas_de_filosofos(void *arg)
+void	take_forks(t_filosofo *filo)
 {
-	t_filosofo	*filo;
-	filo = (t_filosofo *)arg;
-	
-	printf("El filosofo %d quiere comer 😋\n", filo->id);
+	if (someone_died)
+		return;
+	printf("El filosofo %d intenta coger el tenedor ☀️\n", filo->id);
 	if(filo->id % 2 == 0)
 	{
 		pthread_mutex_lock(filo->tenedor_izq);
@@ -65,35 +65,89 @@ void	*cosas_de_filosofos(void *arg)
 		pthread_mutex_lock(filo->tenedor_izq);
 		printf("Filósofo %d (impar) ha cogido el tenedor izquierdo 🍴\n", filo->id);
 	}
-	filo->last_meal_time = get_timestamp();
-	esperar("Comiendo🍜", filo->id, 500000);
+}
+void	drop_forks(t_filosofo *filo)
+{	
 	pthread_mutex_unlock(filo->tenedor_izq);
 	pthread_mutex_unlock(filo->tenedor_der);
-
-	printf("El filosofo %d ha terminado de comer😎\n", filo->id);
-	return (NULL);
+	printf("El filosofo %d quiere dejar el tenedor 🌙\n", filo->id);
 }
-void *parroco(void *arg)
+
+void	eat(t_filosofo *filo)
+{
+	if (someone_died)
+		return;
+	filo->last_meal_time = get_timestamp();
+	esperar("Comiendo🍜", filo->id, 500000);
+	printf("El filosofo %d ha terminado de comer😎\n", filo->id);
+}
+
+void	sleep_philo(t_filosofo *filo)
+{
+	if (someone_died)
+		return;
+	esperar("roncando 😴😴", filo->id, 300000);
+	printf("El filosofo %d ha terminado de dormir🛌\n", filo->id);
+}
+void	think(t_filosofo *filo)
+{
+	if (someone_died)
+		return;
+	esperar("pensando 🤔", filo->id, 100000);
+	printf("El filosofo %d ha terminado de pensar💭\n", filo->id);
+}
+
+void	*parroco(void *arg)
 {
 	t_filosofo	*filos;
 	int			i;
+	long		tiempo_muerte;
+	long		tiempo_real;
+	long		tiempo_teorico;
+	long		retraso;
+
 	filos = (t_filosofo *)arg;
-	
+
 	while (1)
 	{
 		i = 0;
 		while (i < NUM_FILOSOFOS)
 		{
-			if ((get_timestamp() - filos[i].last_meal_time) > TIME_TO_DIE)
+			tiempo_real = get_timestamp();
+			if ((tiempo_real - filos[i].last_meal_time) > TIME_TO_DIE)
 			{
-				printf("💀 Filósofo %d ha muerto\n", filos[i].id);
 				someone_died = 1;
+				tiempo_muerte = tiempo_real;
+				tiempo_teorico = filos[i].last_meal_time + TIME_TO_DIE;
+				retraso = tiempo_muerte - tiempo_teorico;
+
+				printf("💀 Filósofo %d ha muerto.\n", filos[i].id);
+				printf("⏱ Tiempo teórico: %ld ms | Tiempo real: %ld ms | Retraso: %ld ms\n",
+					tiempo_teorico - start_time,
+					tiempo_muerte - start_time,
+					retraso);
 				return (NULL);
 			}
 			i++;
 		}
-		usleep(1000);
+		usleep(1000);  // evitar sobrecargar la CPU
 	}
+}
+
+void *philosopher_routine(void *arg)
+{
+	t_filosofo *filo;
+	filo = (t_filosofo *)arg;
+
+	while (!someone_died)
+	{
+		take_forks(filo);
+		eat(filo);
+		drop_forks(filo);
+		sleep_philo(filo);
+		think(filo);
+	}
+	return (NULL);
 }
 
 int	main(void)
@@ -109,6 +163,7 @@ int	main(void)
 		pthread_mutex_init(&tenedores[i], NULL);
 		i++;
 	}
+	start_time = get_timestamp();
 	i = 0;
 	while(i < NUM_FILOSOFOS)
 	{
@@ -116,7 +171,7 @@ int	main(void)
 		filosofos[i].last_meal_time = get_timestamp();
 		filosofos[i].tenedor_izq = &tenedores[i];
 		filosofos[i].tenedor_der = &tenedores[(i + 1) % NUM_FILOSOFOS];
-		pthread_create(&hilos[i], NULL, cosas_de_filosofos, &filosofos[i]);
+		pthread_create(&hilos[i], NULL, philosopher_routine, &filosofos[i]);
 		i++;
 	}
 	pthread_create(&rip, NULL, parroco, filosofos);
