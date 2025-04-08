@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philosophers_2.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzabal-m <mzabal-m@student.42.fr>          +#+  +:+       +#+        */
+/*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 10:37:02 by mzabal-m          #+#    #+#             */
-/*   Updated: 2025/04/08 13:04:10 by mzabal-m         ###   ########.fr       */
+/*   Updated: 2025/04/08 13:44:13 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 /* =================== STRUCTURAS =================== */
@@ -59,15 +60,12 @@ long	get_time_ms(void)
 
 void	safe_print(t_config *cfg, int id, char *msg)
 {
+	long	timestamp;
+
 	pthread_mutex_lock(&cfg->print_mutex);
-	if (!cfg->someone_died)
-	{
-		write(1, msg, ft_strlen(msg));
-		write(1, ": Philosopher ", 14);
-		char c = '0' + id;
-		write(1, &c, 1);
-		write(1, "\n", 1);
-	}
+	timestamp = get_time_ms() - cfg->start_time;
+	if (!cfg->someone_died || (msg && msg[0] == 'd'))
+		printf("[%ld ms] Philosopher %d %s\n", timestamp, id, msg);
 	pthread_mutex_unlock(&cfg->print_mutex);
 }
 
@@ -124,17 +122,26 @@ void	*philo_routine(void *arg)
 	return (NULL);
 }
 
-void	*monitor(void *arg)
+void	*thanatos(void *arg)
 {
 	t_filo *f = (t_filo *)arg;
-	while (!f->cfg->someone_died)
+
+	while (1)
 	{
 		pthread_mutex_lock(&f->meal_mutex);
 		if (get_time_ms() - f->last_meal_time > f->cfg->time_to_die)
 		{
 			pthread_mutex_unlock(&f->meal_mutex);
-			f->cfg->someone_died = 1;
-			write(1, "A philosopher has died.\n", 25);
+
+			pthread_mutex_lock(&f->cfg->death_mutex);
+			if (!f->cfg->someone_died)
+			{
+				f->cfg->someone_died = 1;
+				pthread_mutex_unlock(&f->cfg->death_mutex);
+				safe_print(f->cfg, f->id, "died 💀");
+				return (NULL);
+			}
+			pthread_mutex_unlock(&f->cfg->death_mutex);
 			return (NULL);
 		}
 		pthread_mutex_unlock(&f->meal_mutex);
@@ -169,7 +176,7 @@ int	main(int argc, char **argv)
 	cfg.forks = malloc(sizeof(pthread_mutex_t) * cfg.num_filos);
 	t_filo *f = malloc(sizeof(t_filo) * cfg.num_filos);
 	pthread_t *threads = malloc(sizeof(pthread_t) * cfg.num_filos);
-	pthread_t *monitors = malloc(sizeof(pthread_t) * cfg.num_filos);
+	pthread_t *charon = malloc(sizeof(pthread_t) * cfg.num_filos);
 
 	int i = 0;
 	while (i < cfg.num_filos)
@@ -182,19 +189,19 @@ int	main(int argc, char **argv)
 		f[i].right_fork = &cfg.forks[(i + 1) % cfg.num_filos];
 		pthread_mutex_init(&f[i].meal_mutex, NULL);
 		pthread_create(&threads[i], NULL, philo_routine, &f[i]);
-		pthread_create(&monitors[i], NULL, monitor, &f[i]);
+		pthread_create(&charon[i], NULL, thanatos, &f[i]);
 		i++;
 	}
 	i = 0;
 	while (i < cfg.num_filos)
 	{
 		pthread_join(threads[i], NULL);
-		pthread_join(monitors[i], NULL);
+		pthread_join(charon[i], NULL);
 		i++;
 	}
 	free(cfg.forks);
 	free(f);
 	free(threads);
-	free(monitors);
+	free(charon);
 	return (0);
 }
