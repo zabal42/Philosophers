@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 14:00:27 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 14:01:41 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/15 16:43:09 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,11 @@
 
 void	take_forks(t_filo *f)
 {
+	pthread_mutex_t	*first;
+	pthread_mutex_t	*second;
+
+	first = f->left_fork;
+	second = f->right_fork;
 	if (f->cfg->num_filos == 1)
 	{
 		pthread_mutex_lock(f->left_fork);
@@ -21,8 +26,6 @@ void	take_forks(t_filo *f)
 		pthread_mutex_unlock(f->left_fork);
 		return ;
 	}
-	pthread_mutex_t	*first = f->left_fork;
-	pthread_mutex_t	*second = f->right_fork;
 	if (first > second)
 	{
 		first = f->right_fork;
@@ -52,8 +55,9 @@ void	eat(t_filo *f)
 
 void	*philo_routine(void *arg)
 {
-	t_filo	*f = (t_filo *)arg;
+	t_filo	*f;
 
+	f = (t_filo *)arg;
 	if (f->id % 2 == 0)
 		usleep(1000);
 	while (!is_someone_dead(f->cfg))

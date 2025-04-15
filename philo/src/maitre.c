@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 14:04:08 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 14:04:27 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/15 16:34:11 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,9 +32,11 @@ int	count_full_philos(t_filo *f, t_config *cfg)
 
 void	*maitre(void *arg)
 {
-	t_filo		*f = (t_filo *)arg;
-	t_config	*cfg = f[0].cfg;
+	t_filo		*f;
+	t_config	*cfg;
 
+	f = (t_filo *)arg;
+	cfg = f[0].cfg;
 	while (!is_someone_dead(cfg))
 	{
 		if (count_full_philos(f, cfg) == cfg->num_filos)

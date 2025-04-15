@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 14:02:10 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 14:03:17 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/15 16:29:07 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,9 @@ int	is_someone_dead(t_config *cfg)
 
 void	*thanatos(void *arg)
 {
-	t_filo	*f = (t_filo *)arg;
+	t_filo	*f;
 
+	f = (t_filo *)arg;
 	while (1)
 	{
 		pthread_mutex_lock(&f->meal_mutex);

@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 14:15:47 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 14:16:08 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/15 16:44:21 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,9 @@
 int	start_simulation(t_config *cfg, t_filo *f,
 			pthread_t *threads, pthread_t *charon)
 {
-	int	i = 0;
+	int	i;
 
+	i = 0;
 	while (i < cfg->num_filos)
 	{
 		if (pthread_create(&threads[i], NULL, philo_routine, &f[i]) != 0)
@@ -38,8 +39,9 @@ int	start_simulation(t_config *cfg, t_filo *f,
 void	free_all(t_config *cfg, t_filo *f,
 		pthread_t *threads, pthread_t *charon)
 {
-	int	i = 0;
+	int	i;
 
+	i = 0;
 	while (i < cfg->num_filos)
 	{
 		pthread_mutex_destroy(&cfg->forks[i]);

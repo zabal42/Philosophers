@@ -6,14 +6,13 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 13:59:23 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 14:01:45 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/15 16:53:26 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-int	init_config(t_config *cfg, int argc, char **argv,
-				t_filo **f, pthread_t **t1, pthread_t **t2)
+int	init_config(t_config *cfg, int argc, char **argv, t_filo **f)
 {
 	if (argc != 5 && argc != 6)
 		return (1);
@@ -21,16 +20,16 @@ int	init_config(t_config *cfg, int argc, char **argv,
 	cfg->time_to_die = parse_int(argv[2]);
 	cfg->time_to_eat = parse_int(argv[3]);
 	cfg->time_to_sleep = parse_int(argv[4]);
-	cfg->meals_required = (argc == 6) ? parse_int(argv[5]) : -1;
+	cfg->meals_required = -1;
+	if (argc == 6)
+		cfg->meals_required = parse_int(argv[5]);
 	cfg->someone_died = 0;
 	cfg->start_time = get_time_ms();
 	pthread_mutex_init(&cfg->print_mutex, NULL);
 	pthread_mutex_init(&cfg->death_mutex, NULL);
 	cfg->forks = malloc(sizeof(pthread_mutex_t) * cfg->num_filos);
 	*f = malloc(sizeof(t_filo) * cfg->num_filos);
-	*t1 = malloc(sizeof(pthread_t) * cfg->num_filos);
-	*t2 = malloc(sizeof(pthread_t) * cfg->num_filos);
-	if (!cfg->forks || !*f || !*t1 || !*t2)
+	if (!cfg->forks || !*f)
 		return (1);
 	return (0);
 }
