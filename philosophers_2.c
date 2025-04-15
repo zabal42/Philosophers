@@ -6,7 +6,7 @@
 /*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/07 10:37:02 by mzabal-m          #+#    #+#             */
-/*   Updated: 2025/04/08 13:44:13 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/08 19:25:41 by mikelzabal       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,11 +79,24 @@ void	precise_sleep(int ms, t_config *cfg)
 /* =================== FUNCIONES DE FILOSOFO =================== */
 void	take_forks(t_filo *f)
 {
+	if (f->cfg->num_filos == 2)
+	{
+		if (f->id == 1)
+		{
+			pthread_mutex_lock(f->left_fork);
+			pthread_mutex_lock(f->right_fork);
+		}
+		else
+		{
+			pthread_mutex_lock(f->right_fork);
+			pthread_mutex_lock(f->left_fork);
+		}
+		return ;
+	}
 	if (f->id % 2 == 0)
 		pthread_mutex_lock(f->left_fork);
 	else
 		pthread_mutex_lock(f->right_fork);
-	
 	if (f->id % 2 == 0)
 		pthread_mutex_lock(f->right_fork);
 	else
