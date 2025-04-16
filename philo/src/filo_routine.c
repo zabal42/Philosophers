@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   filo_routine.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
+/*   By: mzabal-m <mzabal-m@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 14:00:27 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 16:43:09 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/16 11:10:50 by mzabal-m         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ void	take_forks(t_filo *f)
 	if (f->cfg->num_filos == 1)
 	{
 		pthread_mutex_lock(f->left_fork);
+		safe_print(f->cfg, f->id, "has taken a fork");
 		precise_sleep(f->cfg->time_to_die + 10, f->cfg);
 		pthread_mutex_unlock(f->left_fork);
 		return ;
@@ -32,7 +33,9 @@ void	take_forks(t_filo *f)
 		second = f->left_fork;
 	}
 	pthread_mutex_lock(first);
+	safe_print(f->cfg, f->id, "has taken a fork");
 	pthread_mutex_lock(second);
+	safe_print(f->cfg, f->id, "has taken a fork");
 }
 
 void	drop_forks(t_filo *f)
