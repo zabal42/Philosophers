@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
+/*   By: mzabal-m <mzabal-m@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 13:58:31 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 17:02:53 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/16 10:06:18 by mzabal-m         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,12 @@ int	main(int argc, char **argv)
 {
 	t_config	cfg;
 	t_filo		*f;
-	pthread_t	*threads = NULL;
-	pthread_t	*charon = NULL;
+	pthread_t	*threads;
+	pthread_t	*charon;
 	pthread_t	maitre_thread;
 
+	threads = NULL;
+	charon = NULL;
 	if (init_config(&cfg, argc, argv, &f)
 		|| alloc_threads(&cfg, &threads, &charon)
 		|| init_filosophers(&cfg, f))
