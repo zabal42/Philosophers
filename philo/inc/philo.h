@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mikelzabal <mikelzabal@student.42.fr>      +#+  +:+       +#+        */
+/*   By: mzabal-m <mzabal-m@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/15 13:54:34 by mikelzabal        #+#    #+#             */
-/*   Updated: 2025/04/15 16:52:03 by mikelzabal       ###   ########.fr       */
+/*   Updated: 2025/04/16 10:36:18 by mzabal-m         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,5 +69,5 @@ void	*thanatos(void *arg);
 void	*maitre(void *arg);
 int		count_full_philos(t_filo *f, t_config *cfg);
 int		alloc_threads(t_config *cfg, pthread_t **threads, pthread_t **charon);
-
+int		check_args(int ac, char **av);
 #endif
