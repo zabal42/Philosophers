@@ -4,7 +4,8 @@
 
 Simulación del clásico problema de concurrencia implementada en C con hilos POSIX (`pthreads`) y exclusión mutua (`mutex`). Un proyecto de la escuela 42 que pone a prueba la gestión de recursos compartidos, la sincronización entre hilos y la detección de condiciones de carrera.
 
-"Diseño orientado a entornos con restricciones: sin librerías externas, gestión manual de memoria y sincronización, código auditado bajo normas 42."
+"*Diseño orientado a entornos con restricciones: sin librerías externas, gestión manual de memoria y sincronización, código auditado bajo normas 42.*"
+
 ---
 
 ## Índice
@@ -16,6 +17,7 @@ Simulación del clásico problema de concurrencia implementada en C con hilos PO
 - [Gestión de Hilos y Mutex](#gestión-de-hilos-y-mutex)
 - [El Párroco](#el-párroco)
 - [La Minisiesta](#la-minisiesta)
+- [Decisiones de Diseño Propias](#decisiones-de-diseño-propias)
 - [Flujo de Ejecución](#flujo-de-ejecución)
 - [Compilación](#compilación)
 
@@ -297,6 +299,60 @@ t=87ms   └──────────────────────�
 | `precise_sleep(f->cfg->time_to_sleep, f->cfg)` | `filo_routine.c` | Durante el sueño |
 
 Esto garantiza que **en menos de 1 ms** desde que el Párroco dobla las campanas, todos los filósofos habrán salido de sus bucles de espera.
+
+---
+
+## Decisiones de Diseño Propias
+
+El subject de philosophers define el problema y las restricciones técnicas, pero deja abierta la arquitectura interna. Las cuatro piezas que siguen son decisiones de diseño tomadas conscientemente: tienen nombre propio, resuelven un problema concreto y no están en ningún enunciado.
+
+---
+
+### El Párroco
+
+**Nombre:** `someone_died` — el campo de `t_config` que actúa como señal de parada global.
+
+**Por qué se llama así:** Cuando alguien muere en un pueblo, el párroco dobla las campanas de la iglesia y todo el mundo sabe que hay que parar. Aquí pasa exactamente lo mismo: en cuanto un filósofo muere (o todos se sacian), alguien activa el flag y el resto de los hilos lo oyen y dejan de hacer lo que estaban haciendo.
+
+**Qué problema resuelve:** El subject exige que la simulación se detenga al detectar una muerte, pero no dice cómo coordinar N hilos para que paren limpiamente y sin condiciones de carrera. El Párroco centraliza esa señal en un único campo booleano protegido por `death_mutex`. Cualquier hilo puede leerlo de forma segura, y solo el primero en activarlo "dobla las campanas"; los demás lo encuentran ya activo y retornan sin sobreescribir nada.
+
+**Por qué es una decisión de diseño consciente:** El subject no impone ningún mecanismo de parada. Podría haberse usado una variable global sin proteger, una señal POSIX, o comprobaciones dispersas por el código. Centralizar la señal en la struct compartida y protegerla con su propio mutex es una elección que hace el código predecible, auditable y libre de race conditions.
+
+---
+
+### La Minisiesta
+
+**Nombre:** `precise_sleep()` — la función que duerme en intervalos cortos de 500 µs en lugar de un único `usleep()` largo.
+
+**Por qué se llama así:** Un filósofo que duerme 200 ms con un solo `usleep(200000)` no puede ser interrumpido. La Minisiesta es dormir de verdad pero en siestecitas: 500 µs, compruebo si hay que parar, 500 µs, compruebo... hasta completar el tiempo pedido o recibir la señal.
+
+**Qué problema resuelve:** `usleep()` es bloqueante. Si el Párroco activa la señal a los 50 ms de un sueño de 200 ms, el hilo seguirá dormido 150 ms más, el programa tardará en cerrarse y los mensajes de estado pueden aparecer desordenados. Con la Minisiesta, ningún hilo tarda más de ~0,5 ms en reaccionar a la señal de parada.
+
+**Por qué es una decisión de diseño consciente:** El subject no prohíbe `usleep()` directo, y en muchas implementaciones se usa sin más. Elegir la Minisiesta es priorizar la reactividad del sistema sobre la simplicidad del código. La penalización (una llamada a `is_someone_dead()` cada 500 µs) es despreciable; el beneficio es una terminación limpia y casi instantánea.
+
+---
+
+### Thanatos
+
+**Nombre:** `thanatos()` — el hilo vigilante que monitoriza si su filósofo ha superado `time_to_die` sin comer.
+
+**Por qué se llama así:** Thanatos es el dios griego de la muerte, hermano gemelo de Hipnos (el sueño). En la mitología es una presencia silenciosa que observa y llega cuando toca. Aquí cada filósofo tiene su propio Thanatos: un hilo que no hace nada más que mirar el reloj y esperar el momento en que su filósofo lleve demasiado tiempo sin comer.
+
+**Qué problema resuelve:** El subject exige detectar la muerte con la mayor precisión posible. La alternativa habitual es un único hilo monitor que recorre todos los filósofos en bucle; el problema es que con N grande el recorrido puede tardar varios milisegundos y retrasar la detección. Asignando un Thanatos a cada filósofo, la comprobación es individual y constante: latencia máxima de 1 ms independientemente de N.
+
+**Por qué es una decisión de diseño consciente:** El subject no especifica cómo detectar la muerte. Un monitor centralizado es la solución más intuitiva. Optar por un Thanatos por filósofo duplica el número de hilos (`2N` en lugar de `N + 1`) pero garantiza una detección de muerte de latencia constante y un código donde la responsabilidad de cada hilo es inequívoca.
+
+---
+
+### Le Maître
+
+**Nombre:** `maitre()` — el hilo que vigila si todos los filósofos han alcanzado `meals_required` y, en ese caso, activa el Párroco.
+
+**Por qué se llama así:** Le maître d'hôtel es el jefe de sala en un restaurante de alta cocina: no cocina ni come, solo supervisa que todo transcurra con orden. Cuando todos los comensales han terminado, es él quien decide que el servicio ha concluido. Aquí hace exactamente eso: recorre la mesa, cuenta quién está saciado y, cuando el último tenedor queda en su sitio, da la señal de cierre.
+
+**Qué problema resuelve:** El subject exige terminar la simulación cuando todos los filósofos han comido el número requerido de veces, pero ese conteo implica leer `meals_eaten` de todos los filósofos de forma segura. Si esa lógica viviera dentro de `philo_routine()`, cada filósofo tendría que leer el estado de los demás, creando contención en los mutexes. El Maître centraliza esa lectura en un único hilo de baja frecuencia (1 comprobación por ms) que acede a cada `meal_mutex` en secuencia y sin interferir con el ciclo principal.
+
+**Por qué es una decisión de diseño consciente:** El subject no indica quién debe comprobar la condición de saciedad ni cómo. Crear un hilo dedicado es una elección que separa responsabilidades: los filósofos comen, los Thanatos vigilan la muerte, el Maître gestiona la saciedad. El resultado es un programa donde cada hilo hace exactamente una cosa y donde añadir o quitar la condición `meals_required` no toca ninguna otra parte del código.
 
 ---
 
