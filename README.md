@@ -1,3 +1,5 @@
+![Philosophers – Concurrency Problem](./assets/philosophers_overview.png)
+
 # philosophers
 
 > *"El problema de los filósofos cenando"* — E. W. Dijkstra, 1965
@@ -5,6 +7,7 @@
 Simulación del clásico problema de concurrencia implementada en C con hilos POSIX (`pthreads`) y exclusión mutua (`mutex`). Un proyecto de la escuela 42 que pone a prueba la gestión de recursos compartidos, la sincronización entre hilos y la detección de condiciones de carrera.
 
 "*Diseño orientado a entornos con restricciones: sin librerías externas, gestión manual de memoria y sincronización, código auditado bajo normas 42.*"
+
 
 ---
 
