@@ -1,1 +1,18 @@
+# OS metadata
 .DS_Store
+Thumbs.db
+
+# Editor metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local assistant/editor settings
+**/.claude/settings.local.json
+
+# Build artifacts
+*.o
+*.dSYM/
+philo/philo
